@@ -10,20 +10,8 @@ import torch.nn.functional as F
 
 from datasets import gen_loader
 from utils import AverageMeter, split_states, generate_eom
-from model import DeLaN, init_weights, DeLaN_Block
+from model import DeLaN, init_weights
 from obj import Visualizer
-
-
-# datasets = 'free'
-datasets = 'cosine'
-train_states = np.load(os.path.join('data', 'train_states_{}.npy'.format(datasets)))
-train_torque = np.load(os.path.join('data', 'train_torque_{}.npy'.format(datasets)))
-test_states = np.load(os.path.join('data', 'test_states_{}.npy'.format(datasets)))
-test_torque = np.load(os.path.join('data', 'test_torque_{}.npy'.format(datasets)))
-
-train_loader = gen_loader(train_states, train_torque, batch_size=64, shuffle=True)
-test_loader = gen_loader(test_states, test_torque, batch_size=1, shuffle=False)
-
 
 import argparse 
 
@@ -43,6 +31,17 @@ parser.add_argument('--T', type=float, default=1.0)
 parser.add_argument('--dt', type=float, default=0.005) 
 
 args = parser.parse_args()
+
+
+# read datasets
+datasets = 'cosine'
+train_states = np.load(os.path.join('data', 'train_states_{}.npy'.format(datasets)))
+train_torque = np.load(os.path.join('data', 'train_torque_{}.npy'.format(datasets)))
+test_states = np.load(os.path.join('data', 'test_states_{}.npy'.format(datasets)))
+test_torque = np.load(os.path.join('data', 'test_torque_{}.npy'.format(datasets)))
+
+train_loader = gen_loader(train_states, train_torque, batch_size=64, shuffle=True)
+test_loader = gen_loader(test_states, test_torque, batch_size=1, shuffle=False)
 
 
 def main(args):
@@ -97,7 +96,7 @@ def evaluate(data_loader, model, criterion):
     # Switch to eval mode
     model.eval()
 
-    # visualizer test
+    # visualizer
     viz = Visualizer()
 
     for i, (state, target) in enumerate(data_loader):
@@ -112,8 +111,8 @@ def evaluate(data_loader, model, criterion):
         running_loss.update(loss.item(), num_states)
 
         # test
-        s, s_d, s_dd = split_states(state.numpy())
-        M_gt, c_gt, g_gt = generate_eom(s.reshape(-1,1), s_d.reshape(-1,1))
+        q, qdot, qddot = split_states(state.numpy().squeeze())
+        M_gt, c_gt, g_gt = generate_eom(q, qdot)
 
         M_pred = M.detach().numpy()
         c_pred = c.detach().numpy()
@@ -121,9 +120,9 @@ def evaluate(data_loader, model, criterion):
 
         u_pred, u_gt = pred.detach().numpy(), target.detach().numpy()
 
-        viz.add_data(s, s_d, s_dd, 
+        viz.add_data(q, qdot, qddot, 
             (u_pred, u_gt),
-            (M_pred @ s_dd.reshape(2,), M_gt @ s_dd.reshape(2,)),
+            (M_pred @ qddot.reshape(2,), M_gt @ qddot.reshape(2,)),
             (c_pred, c_gt),
             (g_pred, g_gt)
         )

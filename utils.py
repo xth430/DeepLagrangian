@@ -1,9 +1,9 @@
 import numpy as np
 
 
-def generate_eom(s, s_d):
+def generate_eom(q, qdot):
     """E.O.M of double pendulum
-        u = M(q)*q_dd + c(q,q_d)*s_d + g(q)  
+        u = M(q)*qddot + c(q,qdot)*qdot + g(q)  
 
     Arguments:
         state {[ndarray]} -- [l*2]
@@ -14,19 +14,18 @@ def generate_eom(s, s_d):
     """ 
 
     M = np.array([
-        [5/3 + np.cos(s[1,0]), 1/3 + 1/2*np.cos(s[1,0])],
-        [1/3 + 1/2*np.cos(s[1,0]), 1/3                 ]
+        [5/3 + np.cos(q[1]), 1/3 + 1/2*np.cos(q[1])],
+        [1/3 + 1/2*np.cos(q[1]), 1/3                 ]
     ])
 
     c = np.array([
-        [-1/2*(2*s_d[0,0]*s_d[1,0] + s_d[1,0]**2)*np.sin(s[1,0])],
-        [1/2*(s_d[0,0]**2)*np.sin(s[1,0])] 
-        # [(s_d[0,0]**2  -s_d[0,0]*s_d[1,0]  )*np.sin(s[1,0])]   # check here!! 
+        [-1/2*(2*qdot[0]*qdot[1] + qdot[1]**2)*np.sin(q[1])],
+        [1/2*(qdot[0]**2)*np.sin(q[1])] 
     ])
 
     g = np.array([
-        [-3/2 * np.sin(s[0,0]) - 1/2*np.sin(s[0,0]+s[1,0])],
-        [-1/2 * np.sin(s[0,0] + s[1,0])]
+        [-3/2 * np.sin(q[0]) - 1/2*np.sin(q[0]+q[1])],
+        [-1/2 * np.sin(q[0] + q[1])]
     ]) * 9.8 * 50
 
     return M, c, g

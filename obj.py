@@ -14,11 +14,11 @@ class Plant(object):
         self.model = model
     
     def get_T(self):
-        T = 1/2*(self.qdot.T)@ self.M @self.qdot
+        T = 1/2*(self.qdot.T)@ self.M @ self.qdot
         return T.squeeze()
 
     def get_V(self):
-        return 3/2*np.cos(self.q[0,0]) + 1/2*np.cos(self.q[0,0]+self.q[1,0])*9.8
+        return 3/2*np.cos(self.q[0]) + 1/2*np.cos(self.q[0]+self.q[1])*9.8
     
     def get_E(self):
         return self.get_T() + self.get_V()
@@ -45,7 +45,7 @@ class Plant(object):
         return q, qdot
     
     def calc_ik(self, q, qdot, qddot):
-        tau = self.M@qddot + self.c + self.g
+        tau = self.M@qddot.reshape(-1,1) + self.c + self.g
         return tau
     
     def calc_fk(self, q, qdot, u):
