@@ -8,15 +8,11 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 
-from datasets import gen_loader
-from utils import AverageMeter, split_states, generate_eom
-from model import DeLaN, init_weights
-from obj import Visualizer
+from common.utils import AverageMeter, split_states, generate_eom, gen_loader
+from common.model import DeLaN, init_weights
+from common.obj import Visualizer
 
 import argparse 
-
-# debug
-torch.autograd.set_detect_anomaly(True)
 
 parser = argparse.ArgumentParser()
 # model argument
@@ -28,7 +24,7 @@ parser.add_argument('--bias', type=float, default=1e-4)
 parser.add_argument('-e','--epochs', type=int, default=200) 
 parser.add_argument('--lr', type=float, default=0.005) 
 parser.add_argument('--T', type=float, default=1.0) 
-parser.add_argument('--dt', type=float, default=0.005) 
+parser.add_argument('--dt', type=float, default=0.01) 
 
 args = parser.parse_args()
 
@@ -45,21 +41,20 @@ test_loader = gen_loader(test_states, test_torque, batch_size=1, shuffle=False)
 
 
 def main(args):
-    print('Loading model...')
+    print('>>> Loading model...')
     model = DeLaN(args)
     model.apply(init_weights)
-    # print(model)
-    print(">>> total params: {:.2f}M".format(sum(p.numel() for p in model.parameters()) / 1000000.0))
+    print('>>> total params: {:.2f}M'.format(sum(p.numel() for p in model.parameters()) / 1000000.0))
 
     criterion = nn.MSELoss()
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
     scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.92)
 
-    print('start train...')
+    print('\n>>> start train')
     for epoch in range(args.epochs):
         train(train_loader, model, criterion, optimizer, scheduler, epoch)
     
-    print('start evaluate...')
+    print('\n>>> start evaluate')
     evaluate(test_loader, model, criterion)
 
 
@@ -85,7 +80,7 @@ def train(data_loader, model, criterion, optimizer, scheduler, epoch):
 
         running_loss.update(loss.item(), num_states)
     
-    print('[{}] LOSS: {:.3f}, lr: {:.5f}'.format(epoch+1, running_loss.avg, scheduler.get_last_lr()[0]))
+    print('[{}] loss: {:.3f}, lr: {:.5f}'.format(epoch+1, running_loss.avg, scheduler.get_last_lr()[0]))
 
     scheduler.step()
 
@@ -106,7 +101,7 @@ def evaluate(data_loader, model, criterion):
 
         pred, M, c, g = model(state) # pred.shape: (batch_size, 2)
 
-        loss = criterion(pred, target)/1000000
+        loss = criterion(pred, target) / 1000000
 
         running_loss.update(loss.item(), num_states)
 
@@ -126,12 +121,10 @@ def evaluate(data_loader, model, criterion):
             (c_pred, c_gt),
             (g_pred, g_gt)
         )
-    
-    viz.stack()
-    viz.plot_graph()
-    # viz.plot_anim()
 
-    print('Test loss: {:.3f}'.format(running_loss.avg))
+    print('evaluate loss: {:.3f}'.format(running_loss.avg))
+    
+    viz.save_plot()
 
 
 if __name__ == "__main__":

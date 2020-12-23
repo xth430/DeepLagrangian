@@ -1,10 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.animation as animation
 
-import torch
-
-from utils import generate_eom
+from common.utils import generate_eom
 
 
 class Plant(object):
@@ -24,11 +21,6 @@ class Plant(object):
         return self.get_T() + self.get_V()
     
     def update_state(self, q, qdot):
-
-        # if q[0,0] > np.pi: q[0,0] -= 2*np.pi
-        # if q[0,0] < -np.pi: q[0,0] += 2*np.pi
-        # if q[1,0] > np.pi: q[1,0] -= 2*np.pi
-        # if q[1,0] < -np.pi: q[1,0] += 2*np.pi
 
         self.q = q
         self.qdot = qdot
@@ -60,28 +52,6 @@ class Plant(object):
     def init_state(self, q, qdot):
         self.update_state(q, qdot)
 
-
-# def gen_free_datasets():
-#     p = Plant()
-#     q_init, qdot_init = np.array([[-0.1], [-0.1]]), np.array([[0.0], [0.0]])
-#     u = np.array([[0.0], [0.0]])
-#     p.init_state(q_init, qdot_init)
-
-#     len_datasets = 300
-#     states = []
-#     for _ in range(len_datasets):
-#         qddot = p.calc_fk(p.q, p.qdot, u)
-#         state = np.concatenate([p.q, p.qdot, qddot], axis=1)
-#         states.append(state)
-#         p.transit(u)
-
-#     states = np.stack(states, axis=0)
-#     targets = np.zeros((len_datasets, 2))
-
-#     np.save('data/test_states_free.npy', states)
-#     np.save('data/test_torque_free.npy', targets)
-
-# gen_free_datasets()
 
 class Visualizer(object):
 
@@ -115,8 +85,14 @@ class Visualizer(object):
         self.qddot = np.stack(self.qddot).squeeze()
         self.stacked = True
 
-    def plot_graph(self):
-        assert self.stack
+    def save_plot(self, fmt='pdf'):
+        assert fmt in ['pdf', 'png']
+        file_name = 'rst.' + fmt
+
+        # stack datasets
+        if not self.stacked:
+            self.stack()
+
         # plot
         plt.rcParams["legend.frameon"] = False
         plt.rcParams['text.latex.preamble'] = r'\usepackage{amsmath}'
@@ -160,47 +136,5 @@ class Visualizer(object):
         fig.align_ylabels()
 
         fig.tight_layout()
-        plt.savefig('rst.pdf')
-        plt.savefig('rst.png')
-        print('ok!')
-    
-    def plot_anim(self):
-        assert self.stacked
-
-        def calc_coords(q):
-            q1, q2 = q[0], q[1]
-            x1, y1 = np.sin(q1), np.cos(q1)
-            x2, y2 = np.sin(q1+q2), np.cos(q1+q2)
-            x2 += x1; y2 += y1
-            return x1, y1, x2, y2
-        
-        fig = plt.figure(figsize=(4,4))
-        ax = fig.add_subplot(111)
-        ims = []
-
-        for i in range(len(self.q)):
-
-            q = self.q[i]
-            x1, y1, x2, y2 = calc_coords(q)
-            im1, = ax.plot([0,x1,x2], [0,y1,y2], 'b')
-            im2 = ax.scatter([0,x1,x2], [0,y1,y2], c='b')
-            ax.set_ylim(-2.2, 2.2)
-            ax.set_xlim(-2.2, 2.2)
-            ax.set_aspect('equal')
-            ax.tick_params(labelbottom=False,
-               labelleft=False,
-               labelright=False,
-               labeltop=False)
-            ax.tick_params(bottom=False,
-               left=False,
-               right=False,
-               top=False)
-            ax.set_xlabel(r'$x$')
-            ax.set_ylabel(r'$y$')
-
-            ims.append([im1, im2])
-
-        ani = animation.ArtistAnimation(fig, ims, interval=10)
-        print('rendering animation... ')
-        ani.save("anim.gif", writer="pillow")
-        # plt.show()
+        plt.savefig(file_name)
+        print('saved: {}'.format(file_name))

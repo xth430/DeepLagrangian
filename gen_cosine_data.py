@@ -1,14 +1,12 @@
 import numpy as np
-import argparse 
 
-from utils import generate_eom, split_states
-from obj import Plant
+from common.utils import generate_eom, split_states
+from common.obj import Plant
 
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--T', type=float, default=1.0) 
-parser.add_argument('--dt', type=float, default=0.01) 
-args = parser.parse_args()
+# config
+T = 1.0
+dt = 0.01
 
 
 train_args = [
@@ -30,7 +28,7 @@ def _cosine_func(arg):
     return lambda t: A*np.cos(2*np.pi*w*beta*t + np.sin(0.5*np.pi*t))
 
 
-def _gen_cosine_sequence(arg, T=args.T, dt=args.dt):
+def _gen_cosine_sequence(arg, T=T, dt=dt):
     l = int(T/dt)
     sequence = []
     func = _cosine_func(arg)
@@ -41,7 +39,7 @@ def _gen_cosine_sequence(arg, T=args.T, dt=args.dt):
     return sequence
 
 
-def diff(x, dt=args.dt):
+def diff(x, dt=dt):
     return (x[2:] - x[:-2]) / 2 / dt
 
 
@@ -72,6 +70,8 @@ def generate_cosine_datasets(phase='train'):
 
     np.save('data/{}_states_cosine.npy'.format(phase), states)
     np.save('data/{}_torque_cosine.npy'.format(phase), targets)
+    
+    print('>>> {} data done!'.format(phase))
 
 
 if __name__ == "__main__":

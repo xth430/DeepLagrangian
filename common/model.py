@@ -1,7 +1,7 @@
 import numpy as np 
 import matplotlib.pyplot as plt  
 
-from utils import split_states
+from common.utils import split_states
 
 import torch
 import torch.nn as nn
@@ -26,18 +26,18 @@ class FCNet(nn.Module):
         self.fc_lo = nn.Linear(self.hid_dim, self.low_dim)
         self.fc_ld = nn.Linear(self.hid_dim, self.inp_dim)
         self.fc_g = nn.Linear(self.hid_dim, self.inp_dim)
-        self.relu = nn.LeakyReLU()
+        self.nonlinearity = nn.LeakyReLU()
 
     def forward(self, q):
         # forward propagation
-        x = self.relu(self.pre(q))
+        x = self.nonlinearity(self.pre(q))
         for i in range(self.num_layers):
             x = self.fc_list[i](x)
-            x = self.relu(x)
+            x = self.nonlinearity(x)
         
         lo = self.fc_lo(x)
         ld = nn.Softplus()(self.fc_ld(x)) + self.bias
-        g = self.fc_g(x) * 1000
+        g = self.fc_g(x)
 
         return lo, ld, g
 
@@ -69,8 +69,8 @@ class DeLaN(nn.Module):
         H = L @ L.transpose(-2,-1)
 
         # calc partial deriv
-        lo_q = compute_jacobian_ag(q, lo)
-        ld_q = compute_jacobian_ag(q, ld)
+        lo_q = compute_jacobian(q, lo)
+        ld_q = compute_jacobian(q, ld)
 
         L_q = torch.zeros(batch_size, self.inp_dim, self.inp_dim, self.inp_dim)
         L_q[:,self.lo_indices[0], self.lo_indices[1]] = lo_q
@@ -100,7 +100,7 @@ def init_weights(m):
         m.bias.data.fill_(0.01)
 
 
-def compute_jacobian_ag(inputs, output):
+def compute_jacobian(inputs, output):
     """
     :param inputs: Batch X Size (e.g. Depth X Width X Height)
     :param output: Batch X out_dims
