@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 
 from common.utils import generate_eom, split_states
@@ -55,6 +57,10 @@ def gen_cosine_states(args):
 
 
 def generate_cosine_datasets(phase='train'):
+
+    if not os.path.exists('data'):
+        os.mkdir('data')
+
     assert phase == 'train' or phase == 'test'
 
     states = gen_cosine_states(train_args if phase=='train' else test_args)
