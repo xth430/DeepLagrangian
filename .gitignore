@@ -1,0 +1,5 @@
+data/test_states_cosine.npy
+data/test_torque_cosine.npy
+data/train_states_cosine.npy
+data/train_torque_cosine.npy
+rst.pdf
