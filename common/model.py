@@ -1,13 +1,10 @@
-import numpy as np 
-import matplotlib.pyplot as plt  
-
-from common.utils import split_states
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
 from torch.autograd.gradcheck import zero_gradients
+
+from common.utils import split_states
 
 
 class FCNet(nn.Module):
